@@ -1,4 +1,7 @@
-const userModule = require("../models/user.model")
+const userModel = require("../models/user.model")
+const bcrypt = require("bcryptjs")
+const jwt = require("jsonwebtoken")
+
 /**
  * @name registerUserController
  * @description registrater a new user,expects username,email and password in the require
@@ -21,8 +24,71 @@ async function registerUsercontroller(req,res){
 
         })
     }
+    const hash= await bcrypt.hash(password,10)
+    const user = await userModel.create({
+        username,
+        email,
+        password: hash
+    })
+
+    const token = jwt.sign(
+        { id:user._id},
+        process.env.JWT_SECRET,
+        {
+            expiresIn:"1d"
+        })
+
+        res.cookie("token",token)
+
+        res.status(201).json({
+        message: "User registered successfully",
+        user:{
+            id:user._id,
+            username:user.username,
+            email:user.email
+        }
+        
+    })
+}
+/**
+ * @name loginUserController
+ * @description login a user,expects email and password in the require
+ * @access public
+ */
+async function loginUserController(req,res){
+    const {email,password} = req.body
+    const user = await userModel.findOne({email})
+
+    if(!user){
+        return res.status(400).json({
+            message: "Invalid email or password"
+        })
+    }
+    const isPasswordvalid = await bcrypt.compare(password,user.password)
+    if(!isPasswordvalid){
+        return res.status(400).json({
+            message: "Invalid email or password"
+        })
+    }
+    const token = jwt.sign(
+        { id:user._id, username:user.username},
+        process.env.JWT_SECRET,
+        {
+            expiresIn:"1d"
+        })
+        res.cookie("token",token)
+        res.status(200).json({
+            message: "User logged in successfully",
+            user:{
+                id:user._id,
+                username:user.username,
+                email:user.email
+            }
+        })
 }
 
 module.exports={
-    registerUsercontroller
+    registerUsercontroller,
+    loginUserController
+
 }

@@ -7,4 +7,10 @@ const authRouter = Router()
  * @access Public
  */
 authRouter.post("/register",authController.registerUsercontroller)
+/**
+ * @route POST/ api/auth/login
+ * @description login a user
+ * @access Public
+ */
+authRouter.post("/login",authController.loginUserController)
 module.exports = authRouter
